@@ -1,0 +1,62 @@
+h1 {
+    text-align: center;
+}
+
+#data {
+    text-align: center;
+}
+
+#winner_table, #round_table {
+    border: 1px solid black;
+    margin: 1em auto;
+}
+
+#winner_table td, #round_table td {
+    border: 1px solid black;
+    padding: 0.2em;
+}
+
+#winner_table tr.disabled, #round_table tr.disabled {
+    color: gray;
+    background-color: lightgrey;
+}
+
+#winner_table td.selected, #round_table td.selected {
+    background-color: lightgreen;
+}
+
+#current {
+    position: fixed;
+    left: 1em;
+    bottom: 1em;
+    border: 1px solid black;
+    background: white;
+    font-size: 0.75em;
+}
+
+#current input {
+    width: 8em;
+}
+
+#current #current_list {
+    font-size: 0.75em;
+}
+
+#basket .slip {
+    display: inline-block;
+    border: 1px solid black;
+    margin: 1em;
+    padding: 1em;
+}
+
+#basket .slip_list {
+    font-size: 0.75em;
+}
+
+#slip_export {
+    border: 1px solid black;
+}
+
+#load_canvas {
+    display: none;
+}
