@@ -3,6 +3,7 @@ let data = [];
 let validity = now;
 let startMoney = 1000000;
 let money = 1000000;
+let oldCode = null;
 let basket = [];
 let current = {};
 
@@ -122,7 +123,7 @@ function updateBasket() {
     var hash = CryptoJS.MD5(basketCode);
     var hashString = hash.toString(CryptoJS.enc.Base64).replace("==","");
 
-    basketCode = '1' + '|' + hashString+'|'+basketCode;
+    basketCode = '1' + '|' + hashString+'|'+basketCode+'|'+(oldCode ? oldCode : '');
 
     const canvas = document.getElementById("slip_export");
 
@@ -134,12 +135,20 @@ function updateBasket() {
     ctx.font = "14px monospace";
     ctx.fillText(hashString, 10, 20);
 
+    if (oldCode) {
+        ctx.fillText(oldCode, 10, 180);
+    }
+
     ctx.font = "14px sans-serif";
     ctx.fillText(`Hunbliga fogadási bizonylat 1.0`, 10, 50);
     ctx.fillText(`Érvényes: ${new Date(validity).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' } )}`, 10, 70);
     ctx.fillText(`Fogadások száma: ${basket.length}`, 10, 90);
     ctx.fillText(`Feltett összeg: Ŧ${(totalBet.toLocaleString('hu-HU'))}`, 10, 110);
     ctx.fillText(`Fennmaradt pénz: Ŧ${(money.toLocaleString('hu-HU'))}`, 10, 130);
+
+    if (oldCode) {
+        ctx.fillText("Csak az alábbival érvényes:", 10, 160);
+    }
 
     var id = ctx.getImageData(0, 0, 540, 200);
     var pixels = id.data;
@@ -262,6 +271,7 @@ function loadDraw() {
         if (y<0) break;
     }
     basket = JSON.parse(data.split('|')[2]);
+    oldCode = data.split('|')[1];
     resetCurrent();
     updateCurrent();
     updateBasket();
