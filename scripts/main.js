@@ -1,42 +1,71 @@
-let now = Date.now(); //Date.parse('2023-03-25 00:00:00'); //Date.now();
+const startMoney = 1000000;
+const now = Date.now(); //Date.parse('2023-03-25 00:00:00'); //Date.now();
+const currentVersion = 2;
+
 let data = [];
 let validity = now;
-let startMoney = 1000000;
 let money = 1000000;
 let oldCode = null;
-let basket = [];
+let basket = { 1:[] };
 let current = {};
+
+function upgradeData(version, data) {
+    if (version == 1) {
+        let result = { 1: []};
+        for (let booking of data) {
+            let amount = booking[0];
+            let newBooking = {};
+
+            for (let key in booking[1]) {
+                newBooking[key.replaceAll('_','')] = booking[1][key][0];
+            }
+
+            result[1].push([amount, newBooking]);
+        }
+        return result;
+    }
+    return data;
+}
+
+function updateMoney() {
+    document.getElementById("remaining_money").innerHTML = `Ŧ${money.toLocaleString('hu-HU')}`;
+}
 
 function betSlipToString(slip) {
     let odds = 1;
 
     let result = '';
     for (let key in slip) {
-        odds = odds * slip[key][1];
+        let type = key[0];
+        let id = key.substring(1);
+        let thread = data.find(item => item.id == id);
 
-        let [type,id] = key.split('_');
-        let name = data.find(item => item.id == id).name;
+        let name = "'" + thread.name + "'";
+
+        let odd = thread.odds[type][slip[key]];
+
+        odds = odds * odd;
 
         if (type=='W') {
-            if (slip[key][0] == 1) {
-                result += `<div>${name} megnyeri a bajnokságot: ${slip[key][1]}</div>`;
-            } else if (slip[key][0] <= 4) {
-                result += `<div>${name} bekerül a legjobb ${slip[key][0]}-be: ${slip[key][1]}</div>`;
+            if (slip[key] == 1) {
+                result += `<div>${name} megnyeri a bajnokságot: ${odd}</div>`;
+            } else if (slip[key] <= 4) {
+                result += `<div>${name} bekerül a legjobb ${slip[key]}-be: ${odd}</div>`;
             } else {
-                result += `<div>${name} bekerül a legjobb ${slip[key][0]}-ba: ${slip[key][1]}</div>`;
+                result += `<div>${name} bekerül a legjobb ${slip[key]}-ba: ${odd}</div>`;
             }
 
         } else if (type=='A') {
-            if (slip[key][0] == 0) {
-                result += `<div>${name} nyer: ${slip[key][1]}</div>`;
+            if (slip[key] == 0) {
+                result += `<div>${name} nyer: ${odd}</div>`;
             } else {
-                result += `<div>${name} nyer legalább ${slip[key][0]}%-al: ${slip[key][1]}</div>`;
+                result += `<div>${name} nyer legalább ${slip[key]}%-al: ${odd}</div>`;
             }
         } else if (type=='B') {
-            if (slip[key][0] == 0) {
-                result += `<div>${name} veszít: ${slip[key][1]}</div>`;
+            if (slip[key] == 0) {
+                result += `<div>${name} veszít: ${odd}</div>`;
             } else {
-                result += `<div>${name} veszít legalább ${slip[key][0]}%-al: ${slip[key][1]}</div>`;
+                result += `<div>${name} veszít legalább ${slip[key]}%-al: ${odd}</div>`;
             }
         }
     }
@@ -100,7 +129,7 @@ function updateBasket() {
     let content = '<div>';
     let totalBet = 0;
 
-    for (let slipData of basket) {
+    for (let slipData of basket[1]) {
         let bet = slipData[0];
         let slip = slipData[1];
 
@@ -119,11 +148,13 @@ function updateBasket() {
     content += '</div>';
     basketDom.innerHTML = content;
 
+    basket['old'] = (oldCode ? oldCode : '');
+
     var basketCode = JSON.stringify(basket);
     var hash = CryptoJS.MD5(basketCode);
     var hashString = hash.toString(CryptoJS.enc.Base64).replace("==","");
 
-    basketCode = '1' + '|' + hashString+'|'+basketCode+'|'+(oldCode ? oldCode : '');
+    basketCode = currentVersion + '|' + hashString + '|' + basketCode;
 
     const canvas = document.getElementById("slip_export");
 
@@ -140,9 +171,9 @@ function updateBasket() {
     }
 
     ctx.font = "14px sans-serif";
-    ctx.fillText(`Hunbliga fogadási bizonylat 1.0`, 10, 50);
+    ctx.fillText(`Hunbliga fogadási bizonylat ${currentVersion}.0`, 10, 50);
     ctx.fillText(`Érvényes: ${new Date(validity).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' } )}`, 10, 70);
-    ctx.fillText(`Fogadások száma: ${basket.length}`, 10, 90);
+    ctx.fillText(`Fogadások száma: ${basket[1].length}`, 10, 90);
     ctx.fillText(`Feltett összeg: Ŧ${(totalBet.toLocaleString('hu-HU'))}`, 10, 110);
     ctx.fillText(`Fennmaradt pénz: Ŧ${(money.toLocaleString('hu-HU'))}`, 10, 130);
 
@@ -151,7 +182,6 @@ function updateBasket() {
     }
 
     var id = ctx.getImageData(0, 0, 540, 200);
-    var pixels = id.data;
 
     let xpos = 520;
     let ypos = 180;
@@ -177,7 +207,6 @@ function updateBasket() {
 }
 
 document.getElementById("slip_export").onclick = DownloadCanvasAsImage;
-
 document.getElementById("current_money").onchange = updateCurrent;
 
 function resetCurrent() {
@@ -188,12 +217,13 @@ function resetCurrent() {
 
     money = startMoney;
 
-    for (let item of basket) {
-        money -= item[0];
+    for (let b in basket) {
+        for (let item of basket[b]) {
+            money -= item[0];
+        }
     }
 
-    document.getElementById("remaining_money").innerHTML = `Ŧ${money.toLocaleString('hu-HU')}`;
-
+    updateMoney();
     updateCurrent();
     updateBasket();
 }
@@ -218,7 +248,7 @@ document.getElementById("current_bet").onclick = function() {
         currentMoney.value = 1000;
     }
 
-    basket.push([parseInt(currentMoney.value), current]);
+    basket[1].push([parseInt(currentMoney.value), current]);
 
     resetCurrent();
 }
@@ -229,6 +259,7 @@ document.getElementById('inp').onchange = function(e) {
     img.onerror = loadFailed;
     img.src = URL.createObjectURL(this.files[0]);
 };
+
 function loadDraw() {
     var canvas = document.getElementById('load_canvas');
     canvas.width = this.width;
@@ -264,13 +295,29 @@ function loadDraw() {
 
         x-=3;
         if (x <= 260) {
-            x = 519;
+            x = 521;
             y -= 3;
         }
         if (y<0) break;
     }
-    basket = JSON.parse(data.split('|')[2]);
-    oldCode = data.split('|')[1];
+
+    let elements = data.split('|');
+    let checksum = elements[1];
+    var hash = CryptoJS.MD5(elements[2]);
+    var hashString = hash.toString(CryptoJS.enc.Base64).replace("==","");
+    console.log(data);
+    if (checksum != hashString) {
+        console.log("Invalid checksum! Not importing");
+        console.log(elements);
+        console.log(checksum);
+        console.log(hashString);
+        alert("Hibás képfájl!");
+        return;
+    }
+
+    basket = upgradeData(parseInt(elements[0]), JSON.parse(elements[2]));
+    oldCode = elements[1];
+
     resetCurrent();
     updateCurrent();
     updateBasket();
@@ -336,9 +383,14 @@ Papa.parse('standings/1.csv', {
 
             let result = `<tr ${klass}><td>${thread.name}</td>`;
 
+            thread.odds ||= {};
+            thread.odds['W'] ||= {};
+
             for (let pos of [16,8,4,2,1]) {
                 let oddsWin = 1 + ((totalPoints / pos)-thread.score) / thread.score / 2;
                 if (oddsWin < 1) oddsWin = 1.01;
+
+                thread.odds['W'][pos] = parseFloat(oddsWin.toFixed(2));
                 result += `<td id="W_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
             }
 
@@ -361,13 +413,22 @@ Papa.parse('standings/1.csv', {
             let score_b = thread_b.score;
             let total = score_a + score_b;
 
+            thread.odds ||= {};
+            thread.odds['A'] ||= {};
+            thread.odds['B'] ||= {};
+
             for (let pos of [50,33,25,10,0]) {
                 let oddsWin = 1 + Math.abs((total - score_a + score_b * (pos/100)) / (score_a - score_b * (pos/100)) / 2);
+
+                thread.odds['A'][pos] = parseFloat(oddsWin.toFixed(2));
 
                 result += `<td id="A_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
             }
             for (let pos of [0,10,25,33,50]) {
                 let oddsWin = 1 + Math.abs((total - score_b + score_a * (pos/100)) / (score_b - score_a * (pos/100)) / 2);
+
+                thread.odds['B'][pos] = parseFloat(oddsWin.toFixed(2));
+
                 result += `<td id="B_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
             }
 
@@ -379,8 +440,7 @@ Papa.parse('standings/1.csv', {
 
         document.getElementById("valid_time").innerHTML = `Oddsok érvényesek: ${new Date(validity).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' } )}`;
 
-        document.getElementById("remaining_money").innerHTML = `Ŧ${money.toLocaleString('hu-HU')}`;
-
+        updateMoney();
         updateCurrent();
         updateBasket();
 
@@ -388,21 +448,27 @@ Papa.parse('standings/1.csv', {
             if (elem.id.startsWith("W_") || elem.id.startsWith("A_") || elem.id.startsWith("B_")) {
                 let elemIdPre = elem.id.split("_").splice(0,2).join("_") + "_";
                 let elemIdPre2 = elemIdPre.replace('A','X').replace('B','Y').replace('X','B').replace('Y','A');
+
                 let elemIdPost = parseInt(elem.id.split("_")[2]);
+
+                let currIdPre = elemIdPre.replaceAll("_","");
+                let currIdPre2 = elemIdPre2.replaceAll("_","");
                 elem.onclick = function() {
                     if (!elem.parentElement.classList.contains("disabled")) {
                         if (elem.classList.contains("selected")) {
                             elem.classList.remove("selected");
-                            delete current[elemIdPre];
+                            delete current[currIdPre];
                         } else {
                             for (let elem2 of document.getElementsByTagName("td")) {
                                 if (elem2.id.startsWith(elemIdPre) || elem2.id.startsWith(elemIdPre2)) {
                                     elem2.classList.remove("selected");
                                 }
                             }
-                            delete current[elemIdPre];
-                            delete current[elemIdPre2];
-                            current[elemIdPre] = [elemIdPost,parseFloat(elem.textContent)];
+                            delete current[currIdPre];
+                            delete current[currIdPre2];
+
+                            current[currIdPre] = elemIdPost;
+
                             elem.classList.add("selected");
                         }
                         updateCurrent();
