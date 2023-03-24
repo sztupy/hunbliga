@@ -267,7 +267,6 @@ function loadDraw() {
             x = 519;
             y -= 3;
         }
-        console.log(r,g,b);
         if (y<0) break;
     }
     basket = JSON.parse(data.split('|')[2]);
