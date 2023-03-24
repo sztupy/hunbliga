@@ -25,17 +25,35 @@ h1 {
     background-color: lightgreen;
 }
 
+#data {
+    margin-left:25%;
+}
+
 #current {
+    width: 25%;
+    height: 100%;
     position: fixed;
-    left: 1em;
-    bottom: 1em;
+    overflow: auto;
     border: 1px solid black;
     background: white;
     font-size: 0.75em;
+    top: 0;
+    left: 0;
+    padding: 1em;
 }
 
 #current input {
-    width: 8em;
+    width: 100%;
+}
+#current button {
+    width: 100%;
+}
+#current div {
+    margin-bottom: 0.5em;
+}
+
+#current h2 {
+    margin-top: 1em;
 }
 
 #current #current_list {
@@ -59,4 +77,8 @@ h1 {
 
 #load_canvas {
     display: none;
+}
+
+#load {
+    padding-bottom: 2em;
 }

@@ -40,7 +40,7 @@ function betSlipToString(slip) {
         let id = key.substring(1);
         let thread = data.find(item => item.id == id);
 
-        let name = "'" + thread.name + "'";
+        let name = "<strong>'" + thread.name + "'</strong>";
 
         let odd = thread.odds[type][slip[key]];
 
@@ -68,6 +68,10 @@ function betSlipToString(slip) {
                 result += `<div>${name} veszít legalább ${slip[key]}%-al: ${odd}</div>`;
             }
         }
+    }
+
+    if (result == '') {
+        result = 'Válassz tétet a jobb oldali odds-okra kattintva. ';
     }
 
     return [odds,result];
@@ -138,9 +142,9 @@ function updateBasket() {
         let betMoney = bet * parseFloat(odds.toFixed(2));
 
 
-        content += `<div class="slip"><div class="money">Feltett pénz: Ŧ${bet.toLocaleString('hu-HU')}</div><div class="slip_list">`;
+        content += `<div class="slip"><div class="money"><strong>Feltett pénz</strong>: Ŧ${bet.toLocaleString('hu-HU')}</div><div class="slip_list">`;
         content += result;
-        content += `</div><div>Odds: ${odds.toFixed(2)}</div><div>Potenciális nyeremény: Ŧ${(betMoney.toLocaleString('hu-HU'))}</div></div>`;
+        content += `</div><div><strong>Odds</strong>: ${odds.toFixed(2)}</div><div><strong>Potenciális nyeremény</strong>: Ŧ${(betMoney.toLocaleString('hu-HU'))}</div></div>`;
 
         totalBet += bet;
     }
