@@ -222,8 +222,10 @@ function resetCurrent() {
     money = startMoney;
 
     for (let b in basket) {
-        for (let item of basket[b]) {
-            money -= item[0];
+        if (b!='old') {
+            for (let item of basket[b]) {
+                money -= item[0];
+            }
         }
     }
 
