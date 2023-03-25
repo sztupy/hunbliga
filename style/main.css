@@ -29,6 +29,10 @@ h1 {
     margin-left:25%;
 }
 
+#data td {
+    font-size: 0.75em;
+}
+
 #current {
     width: 25%;
     height: 100%;
@@ -40,6 +44,27 @@ h1 {
     top: 0;
     left: 0;
     padding: 1em;
+}
+
+@media only screen and (max-width: 720px) {
+    #current {
+        width: 100%;
+        height: auto;
+        position: relative;
+        overflow: auto;
+        border: 1px solid black;
+        background: white;
+        font-size: 0.75em;
+        top: auto;
+        left: auto;
+        padding: 1em;
+    }
+    #data {
+        margin-left: 0;
+    }
+    #data td {
+        font-size: 0.5em;
+    }
 }
 
 #current input {
