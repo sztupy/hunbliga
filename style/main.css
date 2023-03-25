@@ -46,7 +46,7 @@ h1 {
     padding: 1em;
 }
 
-@media only screen and (max-width: 720px) {
+@media only screen and (max-width: 920px) {
     #current {
         width: 100%;
         height: auto;

@@ -1,12 +1,13 @@
 const startMoney = 1000000;
 const now = Date.now(); //Date.parse('2023-03-25 00:00:00'); //Date.now();
 const currentVersion = 2;
+const activePos = 1;
 
 let data = [];
 let validity = now;
 let money = 1000000;
 let oldCode = null;
-let basket = { 1:[] };
+let basket = {}; basket[activePos] = [];
 let current = {};
 
 function upgradeData(version, data) {
@@ -133,14 +134,13 @@ function updateBasket() {
     let content = '<div>';
     let totalBet = 0;
 
-    for (let slipData of basket[1]) {
+    for (let slipData of basket[activePos]) {
         let bet = slipData[0];
         let slip = slipData[1];
 
         let [odds,result] = betSlipToString(slip);
 
         let betMoney = bet * parseFloat(odds.toFixed(2));
-
 
         content += `<div class="slip"><div class="money"><strong>Feltett pénz</strong>: Ŧ${bet.toLocaleString('hu-HU')}</div><div class="slip_list">`;
         content += result;
