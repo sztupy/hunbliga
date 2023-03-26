@@ -22,8 +22,39 @@ h1 {
 }
 
 #winner_table td.selected, #round_table td.selected {
+    background-color: orange;
+}
+
+#winner_table td.win, #round_table td.win {
+    font-weight: bold;
+    color: black;
+    background-color: palegreen;
+}
+
+#winner_table td.lose, #round_table td.lose {
+    font-style: italic;
+    color: black;
+    background-color: palevioletred;
+}
+
+.current_list .win, .slip_list .win {
+    font-weight: bold;
     background-color: lightgreen;
 }
+
+.current_list .lose, .slip_list .lose {
+    font-style: italic;
+    background-color: lightsalmon;
+}
+
+.slip.win {
+    background-color: palegreen;
+}
+
+.slip.lose {
+    background-color: lavenderblush;
+}
+
 
 #data {
     margin-left:25%;
