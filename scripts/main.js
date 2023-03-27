@@ -1,7 +1,7 @@
 const startMoney = 1000000;
 const now = Date.now(); //Date.parse('2023-03-25 00:00:00'); //Date.now();
 const currentVersion = 2;
-const activePos = 3;
+const activePos = 4;
 
 let data = {};
 let scoreData = {};
