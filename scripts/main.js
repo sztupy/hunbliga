@@ -1,7 +1,10 @@
 const startMoney = 1000000;
-const now = Date.now(); //Date.parse('2023-03-25 00:00:00'); //Date.now();
+const now = Date.now();
+// now = Date.parse('2023-03-25 00:00:00');
 const currentVersion = 2;
-const activePos = 4;
+const activePos = 5;
+const minRound = 2;
+const currentRound = 3;
 
 let data = {};
 let scoreData = {};
@@ -60,24 +63,29 @@ function betSlipToString(version, slip) {
             } else {
                 result += `<div class="${getWinLoseClass(wl)}">${name} bekerül a legjobb ${slip[key]}-ba: ${odd}</div>`;
             }
-
-        } else if (type=='A') {
-            let wl = scoreData['A'][slip[key]][thread.id];
-            if (wl == -1) winlose = -1;
-            if (wl != 1 && winlose == 1) winlose = 0;
-            if (slip[key] == 0) {
-                result += `<div class="${getWinLoseClass(wl)}">${name} nyer: ${odd}</div>`;
-            } else {
-                result += `<div class="${getWinLoseClass(wl)}">${name} nyer legalább ${slip[key]}%-al: ${odd}</div>`;
-            }
-        } else if (type=='B') {
-            let wl = scoreData['B'][slip[key]][thread.id];
-            if (wl == -1) winlose = -1;
-            if (wl != 1 && winlose == 1) winlose = 0;
-            if (slip[key] == 0) {
-                result += `<div class="${getWinLoseClass(wl)}">${name} veszít: ${odd}</div>`;
-            } else {
-                result += `<div class="${getWinLoseClass(wl)}">${name} veszít legalább ${slip[key]}%-al: ${odd}</div>`;
+        } else {
+            for (let cR = currentRound; cR >= minRound; cR--) {
+                let name_a = String.fromCharCode('A'.charCodeAt(0) + (cR - minRound) * 2);
+                let name_b = String.fromCharCode('B'.charCodeAt(0) + (cR - minRound) * 2);
+                if (type == name_a) {
+                    let wl = scoreData[name_a][slip[key]][thread.id];
+                    if (wl == -1) winlose = -1;
+                    if (wl != 1 && winlose == 1) winlose = 0;
+                    if (slip[key] == 0) {
+                        result += `<div class="${getWinLoseClass(wl)}">(${name_a}/${name_b}) ${name} nyer: ${odd}</div>`;
+                    } else {
+                        result += `<div class="${getWinLoseClass(wl)}">(${name_a}/${name_b}) ${name} nyer legalább ${slip[key]}%-al: ${odd}</div>`;
+                    }
+                } else if (type == name_b) {
+                    let wl = scoreData[name_b][slip[key]][thread.id];
+                    if (wl == -1) winlose = -1;
+                    if (wl != 1 && winlose == 1) winlose = 0;
+                    if (slip[key] == 0) {
+                        result += `<div class="${getWinLoseClass(wl)}">(${name_a}/${name_b}) ${name} veszít: ${odd}</div>`;
+                    } else {
+                        result += `<div class="${getWinLoseClass(wl)}">(${name_a}/${name_b}) ${name} veszít legalább ${slip[key]}%-al: ${odd}</div>`;
+                    }
+                }
             }
         }
     }
@@ -374,132 +382,201 @@ function getWinLoseClass(pos) {
 }
 
 function postDownload() {
-    const dataDom = document.getElementById("winner_table_body");
-    const tournDom = document.getElementById("round_table_body");
+    const tournDom = document.getElementById("data_tables");
 
     for (let positions = activePos; positions>=1; positions--) {
         let latest = positions == activePos;
 
-        for (let thread of data[positions]) {
-            thread.score = thread.rounds[0].points + thread.rounds[0].diff * 0.1;
-            if (thread.rounds[1].points) {
-                thread.score += thread.rounds[1].points + thread.rounds[1].diff * 0.1;
+        for (let cR = currentRound; cR >= minRound; cR--) {
+            let winnerTable = `<table>
+                    <thead>
+                        <tr>
+                            <td>Thread</td>`;
+
+            if (cR<=2) winnerTable += `<td>Legjobb 16</td>`;
+            if (cR<=3) winnerTable += `<td>Legjobb 8</td>`;
+            if (cR<=4) winnerTable += `<td>Legjobb 4</td>`;
+            if (cR<=5) winnerTable += `<td>Legjobb 2</td>`;
+
+            winnerTable += `<td>Nyertes</td>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            for (let thread of data[positions]) {
+                thread.score = 0;
+                for (let counter = cR - 1; counter>=0; counter--) {
+                    thread.score += thread.rounds[counter].points + thread.rounds[counter].diff * 0.1
+                }
+                if (thread.score < 0) thread.score = 0;
             }
-            if (thread.score < 0) thread.score = 0;
-        }
 
-        let scores = data[positions].filter(item => item.rounds[2].time).sort((a,b) => a.name > b.name ? 1 : -1);
+            let scores = data[positions].filter(item => item.rounds[cR] && item.rounds[cR].time).sort((a,b) => a.name > b.name ? 1 : -1);
 
-        let totalPoints = scores.reduce((sum,thread) => sum + thread.score, 0);
+            let totalPoints = scores.reduce((sum,thread) => sum + thread.score, 0);
 
-        for (let thread of scores) {
-            let klass = '';
-            if (thread.rounds[2].time < now) {
-                klass = 'class="disabled"';
-            }
+            for (let thread of scores) {
+                let klass = '';
+                if (thread.rounds[cR].time < now) {
+                    klass = 'class="disabled"';
+                }
 
-            let result = `<tr ${klass}><td>${thread.name}</td>`;
+                let result = `<tr ${klass}><td>${thread.name}<span class="logo">${thread.logo}</span></td>`;
 
-            thread.odds ||= {};
-            thread.odds['W'] ||= {};
+                thread.odds ||= {};
+                thread.odds['W'] ||= {};
 
-            for (let pos of [16,8,4,2,1]) {
-                let oddsWin = 1 + ((totalPoints / pos)-thread.score) / thread.score / 2;
-                if (oddsWin < 1) oddsWin = 1.01;
+                validPositions = [];
 
-                thread.odds['W'][pos] = parseFloat(oddsWin.toFixed(2));
+                if (cR<=2) validPositions.push(16);
+                if (cR<=3) validPositions.push(8);
+                if (cR<=4) validPositions.push(4);
+                if (cR<=5) validPositions.push(2);
+                validPositions.push(1);
 
-                if (latest) {
-                    scoreData['W'] ||= {}
-                    scoreData['W'][pos] ||= {}
+                for (let pos of validPositions) {
+                    let oddsWin = 1 + ((totalPoints / pos)-thread.score) / thread.score / 2;
+                    if (oddsWin < 1) oddsWin = 1.01;
 
-                    if (pos == 16) {
-                        if (thread.rounds[2].grp == 'X') {
-                            scoreData['W'][pos][thread.id] = -1;
-                        } else if (thread.rounds[2].grp == 'A') {
-                            scoreData['W'][pos][thread.id] = 1;
-                        }
+                    if (!thread.odds['W'][pos]) {
+                        thread.odds['W'][pos] = parseFloat(oddsWin.toFixed(2));
                     }
 
-                    result += `<td class="${getWinLoseClass(scoreData['W'][pos][thread.id])}" id="W_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
+                    if (latest) {
+                        scoreData['W'] ||= {}
+                        scoreData['W'][pos] ||= {}
+
+                        for (let cR = currentRound; cR >= minRound; cR--) {
+                            if (thread.rounds[cR].grp == 'X') {
+                                scoreData['W'][pos][thread.id] = -1;
+                            } else if (['A','P','D','S'].includes(thread.rounds[cR].grp)) {
+                                if (pos == 16 && cR == 2) {
+                                    scoreData['W'][pos][thread.id] = 1;
+                                } else if (pos == 8 && cR == 3) {
+                                    scoreData['W'][pos][thread.id] = 1;
+                                } else if (pos == 4 && cR == 4) {
+                                    scoreData['W'][pos][thread.id] = 1;
+                                } else if (pos == 2 && cR == 5) {
+                                    scoreData['W'][pos][thread.id] = 1;
+                                } else if (pos == 1 && cR == 6) {
+                                    scoreData['W'][pos][thread.id] = 1;
+                                }
+                            }
+                        }
+
+                        result += `<td class="${getWinLoseClass(scoreData['W'][pos][thread.id])}" id="W_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
+                    }
+                }
+
+                if (latest) {
+                    result += '</tr>';
+                    winnerTable += result;
                 }
             }
 
             if (latest) {
-                result += '</tr>';
-                dataDom.innerHTML += result;
-            }
-        }
-
-
-        let tournaments = data[positions].filter(item => item.rounds[2].pos == 1).sort((a,b) => a.rounds[2].time-b.rounds[2].time);
-
-        for (let thread of tournaments) {
-            let klass = '';
-            if (thread.rounds[2].time < now) {
-                klass = 'class="disabled"';
+                winnerTable += `</tbody></table>`;
+                tournDom.innerHTML += winnerTable;
             }
 
-            let result = `<tr ${klass}><td>${thread.name}</td>`;
-            let score_a = thread.score;
-            let thread_b = data[positions].find(item => item.id == thread.rounds[2].enid);
-            let score_b = thread_b.score;
-            let total = score_a + score_b;
+            let tournaments = data[positions].filter(item => item.rounds[cR] && item.rounds[cR].time && item.rounds[cR].pos == 1).sort((a,b) => a.rounds[cR].time-b.rounds[cR].time);
 
-            thread.odds ||= {};
-            thread.odds['A'] ||= {};
-            thread.odds['B'] ||= {};
+            let name_a = String.fromCharCode('A'.charCodeAt(0) + (cR - minRound) * 2);
+            let name_b = String.fromCharCode('B'.charCodeAt(0) + (cR - minRound) * 2);
 
-            for (let pos of [50,33,25,10,0]) {
-                let oddsWin = 1 + Math.abs((total - score_a + score_b * (pos/100)) / (score_a - score_b * (pos/100)) / 2);
+            let tournResults = `<table><thead>
+                <tr>
+                    <td>${name_a} Thread</td>
+                    <td>>50%</td>
+                    <td>>33%</td>
+                    <td>>25%</td>
+                    <td>>10%</td>
+                    <td>${name_a} nyer</td>
+                    <td>${name_b} nyer</td>
+                    <td>>10%</td>
+                    <td>>25%</td>
+                    <td>>33%</td>
+                    <td>>50%</td>
+                    <td>${name_b} Thread</td>
+                </tr>
+            </thead>
+            <tbody>`;
 
-                thread.odds['A'][pos] = parseFloat(oddsWin.toFixed(2));
-
-                if (latest) {
-                    scoreData['A'] ||= {}
-                    scoreData['A'][pos] ||= {}
-                    if (thread.rounds[2].grp == 'A') {
-                        if (parseFloat(thread.rounds[2].pp) - 50 > pos/2) {
-                            scoreData['A'][pos][thread.id] = 1
-                        } else {
-                            scoreData['A'][pos][thread.id] = -1
-                        }
-                    } else if (thread.rounds[2].points > 0) {
-                        scoreData['A'][pos][thread.id] = -1
-                    }
-                    result += `<td class="${getWinLoseClass(scoreData['A'][pos][thread.id])}" id="A_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
+            for (let thread of tournaments) {
+                let klass = '';
+                if (thread.rounds[cR].time < now) {
+                    klass = 'class="disabled"';
                 }
-            }
-            for (let pos of [0,10,25,33,50]) {
-                let oddsWin = 1 + Math.abs((total - score_b + score_a * (pos/100)) / (score_b - score_a * (pos/100)) / 2);
 
-                thread.odds['B'][pos] = parseFloat(oddsWin.toFixed(2));
+                let result = `<tr ${klass}><td>${thread.name}<span class="logo">${thread.logo}</span></td>`;
+                let score_a = thread.score;
+                let thread_b = data[positions].find(item => item.id == thread.rounds[cR].enid);
+                if (!thread_b) continue;
+                let score_b = thread_b.score;
+                let total = score_a + score_b;
+
+                thread.odds ||= {};
+                thread.odds[name_a] ||= {};
+                thread.odds[name_b] ||= {};
+
+                for (let pos of [50,33,25,10,0]) {
+                    let oddsWin = 1 + Math.abs((total - score_a + score_b * (pos/100)) / (score_a - score_b * (pos/100)) / 2);
+
+                    thread.odds[name_a][pos] = parseFloat(oddsWin.toFixed(2));
+
+                    if (latest) {
+                        scoreData[name_a] ||= {}
+                        scoreData[name_a][pos] ||= {}
+                        if (thread.rounds[cR].grp == 'A') {
+                            if (parseFloat(thread.rounds[cR].pp) - 50 > pos/2) {
+                                scoreData[name_a][pos][thread.id] = 1
+                            } else {
+                                scoreData[name_a][pos][thread.id] = -1
+                            }
+                        } else if (thread.rounds[cR].points > 0) {
+                            scoreData[name_a][pos][thread.id] = -1
+                        }
+                        result += `<td class="${getWinLoseClass(scoreData[name_a][pos][thread.id])}" id="${name_a}_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
+                    }
+                }
+                for (let pos of [0,10,25,33,50]) {
+                    let oddsWin = 1 + Math.abs((total - score_b + score_a * (pos/100)) / (score_b - score_a * (pos/100)) / 2);
+
+                    thread.odds[name_b][pos] = parseFloat(oddsWin.toFixed(2));
+
+                    if (latest) {
+                        scoreData[name_b] ||= {}
+                        scoreData[name_b][pos] ||= {}
+                        if (thread_b.rounds[cR].grp == 'A') {
+                            if (parseFloat(thread_b.rounds[cR].pp) - 50 > pos/2) {
+                                scoreData[name_b][pos][thread.id] = 1
+                            } else {
+                                scoreData[name_b][pos][thread.id] = -1
+                            }
+                        } else if (thread_b.rounds[cR].points > 0) {
+                            scoreData[name_b][pos][thread.id] = -1
+                        }
+
+                        result += `<td class="${getWinLoseClass(scoreData[name_b][pos][thread.id])}" id="${name_b}_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
+                    }
+                }
 
                 if (latest) {
-                    scoreData['B'] ||= {}
-                    scoreData['B'][pos] ||= {}
-                    if (thread_b.rounds[2].grp == 'A') {
-                        if (parseFloat(thread_b.rounds[2].pp) - 50 > pos/2) {
-                            scoreData['B'][pos][thread.id] = 1
-                        } else {
-                            scoreData['B'][pos][thread.id] = -1
-                        }
-                    } else if (thread_b.rounds[2].points > 0) {
-                        scoreData['B'][pos][thread.id] = -1
-                    }
-
-                    result += `<td class="${getWinLoseClass(scoreData['B'][pos][thread.id])}" id="B_${thread.id}_${pos}">${oddsWin.toFixed(2)}</td>`;
+                    result += `<td><span class="logo">${thread_b.logo}</span>${thread.rounds[cR].en}</td></tr>`;
+                    tournResults += result;
                 }
             }
 
             if (latest) {
-                result += `<td>${thread.rounds[2].en}</td></tr>`;
-                tournDom.innerHTML += result;
+                tournResults += `</tbody></table>`;
+                tournDom.innerHTML += tournResults;
             }
         }
 
         if (latest) {
-            validity = scores.reduce((min, item) => item.rounds[2].time > now ? (min > item.rounds[2].time ? item.rounds[2].time : min) : min, scores[0].rounds[2].time);
+            validity = data[positions].filter(item => item.rounds[minRound].time).reduce((min, item) => item.rounds[currentRound].time > now ? (min > item.rounds[currentRound].time ? item.rounds[currentRound].time : min) : min, new Date('2024-01-01'));
+
+
             document.getElementById("valid_time").innerHTML = `Oddsok érvényesek: ${new Date(validity).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' } )}`;
         }
     }
@@ -509,34 +586,40 @@ function postDownload() {
     updateBasket();
 
     for (let elem of document.getElementsByTagName("td")) {
-        if (elem.id.startsWith("W_") || elem.id.startsWith("A_") || elem.id.startsWith("B_")) {
-            let elemIdPre = elem.id.split("_").splice(0,2).join("_") + "_";
-            let elemIdPre2 = elemIdPre.replace('A','X').replace('B','Y').replace('X','B').replace('Y','A');
+        for (let cR = currentRound; cR >= minRound; cR--) {
+            let name_a = String.fromCharCode('A'.charCodeAt(0) + (cR - minRound) * 2);
+            let name_b = String.fromCharCode('B'.charCodeAt(0) + (cR - minRound) * 2);
 
-            let elemIdPost = parseInt(elem.id.split("_")[2]);
+            if (elem.id.startsWith("W_") || elem.id.startsWith(name_a + '_') || elem.id.startsWith(name_b +'_')) {
+                let elemIdPre = elem.id.split("_").splice(0,2).join("_") + "_";
+                let elemIdPre2 = elemIdPre.replace(name_a,'X').replace(name_b,'Y').replace('X',name_b).replace('Y',name_a);
 
-            let currIdPre = elemIdPre.replaceAll("_","");
-            let currIdPre2 = elemIdPre2.replaceAll("_","");
-            elem.onclick = function() {
-                if (!elem.parentElement.classList.contains("disabled")) {
-                    if (elem.classList.contains("selected")) {
-                        elem.classList.remove("selected");
-                        delete current[currIdPre];
-                    } else {
-                        for (let elem2 of document.getElementsByTagName("td")) {
-                            if (elem2.id.startsWith(elemIdPre) || elem2.id.startsWith(elemIdPre2)) {
-                                elem2.classList.remove("selected");
+                let elemIdPost = parseInt(elem.id.split("_")[2]);
+
+                let currIdPre = elemIdPre.replaceAll("_","");
+                let currIdPre2 = elemIdPre2.replaceAll("_","");
+                elem.onclick = function() {
+                    if (!elem.parentElement.classList.contains("disabled")) {
+                        if (elem.classList.contains("selected")) {
+                            elem.classList.remove("selected");
+                            delete current[currIdPre];
+                        } else {
+                            for (let elem2 of document.getElementsByTagName("td")) {
+                                if (elem2.id.startsWith(elemIdPre) || elem2.id.startsWith(elemIdPre2)) {
+                                    elem2.classList.remove("selected");
+                                }
                             }
+                            delete current[currIdPre];
+                            delete current[currIdPre2];
+
+                            current[currIdPre] = elemIdPost;
+
+                            elem.classList.add("selected");
                         }
-                        delete current[currIdPre];
-                        delete current[currIdPre2];
-
-                        current[currIdPre] = elemIdPost;
-
-                        elem.classList.add("selected");
+                        updateCurrent();
                     }
-                    updateCurrent();
                 }
+                break;
             }
         }
     }
@@ -544,7 +627,6 @@ function postDownload() {
 
 let downloaded = 0;
 for (let positions = activePos; positions>=1; positions--) {
-    let latest = positions == activePos;
     Papa.parse(`standings/${positions}.csv`, {
         download: true,
         header: true,
@@ -559,6 +641,9 @@ for (let positions = activePos; positions>=1; positions--) {
                     time -= 3600000;
                 }
                 return time;
+            }
+            if (header == "logo" && !value) {
+                return ' ';
             }
             return value;
         },

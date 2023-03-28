@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url(https://raw.githack.com/googlefonts/noto-emoji/main/fonts/NotoColorEmoji.ttf);
+}
+
 h1 {
     text-align: center;
 }
@@ -6,32 +11,32 @@ h1 {
     text-align: center;
 }
 
-#winner_table, #round_table {
+#data_tables table {
     border: 1px solid black;
     margin: 1em auto;
 }
 
-#winner_table td, #round_table td {
+#data_tables  td {
     border: 1px solid black;
     padding: 0.2em;
 }
 
-#winner_table tr.disabled, #round_table tr.disabled {
+#data_tables  tr.disabled {
     color: gray;
     background-color: lightgrey;
 }
 
-#winner_table td.selected, #round_table td.selected {
+#data_tables  td.selected {
     background-color: orange;
 }
 
-#winner_table td.win, #round_table td.win {
+#data_tables  td.win {
     font-weight: bold;
     color: black;
     background-color: palegreen;
 }
 
-#winner_table td.lose, #round_table td.lose {
+#data_tables td.lose {
     font-style: italic;
     color: black;
     background-color: palevioletred;
@@ -75,6 +80,19 @@ h1 {
     top: 0;
     left: 0;
     padding: 1em;
+}
+
+.logo {
+    display: block;
+    float: right;
+    margin-left: 1em;
+    font-size: 1.25em;
+}
+
+td:last-child .logo {
+    float: left;
+    margin-left: 0;
+    margin-right: 1em;
 }
 
 @media only screen and (max-width: 920px) {
