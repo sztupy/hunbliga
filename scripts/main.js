@@ -635,7 +635,7 @@ for (let positions = activePos; positions>=1; positions--) {
             return name.toLowerCase().replace(" ","_").replace("%","pp")
         },
         transform: function(value, header) {
-            if (header == "r3_time" && value) {
+            if (header.endsWith("_time") && value) {
                 let time = Date.parse(value.replace(/\s/,"T")+'Z') - 3600000;
                 if (time > Date.parse('2023-03-26T01:00:00Z')) {
                     time -= 3600000;
