@@ -2,9 +2,9 @@ const startMoney = 1000000;
 const now = Date.now();
 // now = Date.parse('2023-03-25 00:00:00');
 const currentVersion = 2;
-const activePos = 8;
+const activePos = 9;
 const minRound = 2;
-const currentRound = 3;
+const currentRound = 4;
 
 let data = {};
 let scoreData = {};
@@ -406,7 +406,9 @@ function postDownload() {
             for (let thread of data[positions]) {
                 thread.score = 0;
                 for (let counter = cR - 1; counter>=0; counter--) {
-                    thread.score += thread.rounds[counter].points + thread.rounds[counter].diff * 0.1
+                    if (thread.rounds[counter]) {
+                        thread.score += thread.rounds[counter].points + thread.rounds[counter].diff * 0.1
+                    }
                 }
                 if (thread.score < 0) thread.score = 0;
             }
