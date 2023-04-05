@@ -2,9 +2,9 @@ const startMoney = 1000000;
 const now = Date.now();
 // now = Date.parse('2023-03-25 00:00:00');
 const currentVersion = 2;
-const activePos = 9;
+const activePos = 10;
 const minRound = 2;
-const currentRound = 4;
+const currentRound = 5;
 
 let data = {};
 let scoreData = {};
